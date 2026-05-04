@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Fund Transfer Service
-  version: 1.1.0
+  version: 1.2.0
   description: >
     API to perform fund-to-fund and segment-based value transfers.
   license:
@@ -39,7 +39,7 @@ paths:
                   transactionAmounts:
                     amountType: FULL_REBALANCE
                   funds:
-                    transferFrom:
+                    transferFromFunds:
                       - fundId: FUND_FIXED_01
                         assetClass: FIXED
                         investmentType: VARIABLE_ANNUITY_FUND
@@ -47,7 +47,7 @@ paths:
                         maturityDate: "2030-12-31"
                         fundSegments:
                           - segmentId: SEG_FROM_01
-                    transferTo:
+                    transferToFunds:
                       - fundId: FUND_EQUITY_99
                         assetClass: EQUITY
                         investmentType: VARIABLE_ANNUITY_FUND
@@ -177,7 +177,8 @@ components:
       required: true
       schema:
         type: string
-        pattern: '^[A-Za-z0-9]{6,20}$'
+        minLength: 1
+        maxLength: 30
     CorrelationIdHeader:
       name: correlationId
       in: header
@@ -206,7 +207,7 @@ components:
 
   responses:
     FundTransferSuccess:
-      description: Created — Fund Transfer request accepted for processing.
+      description: Accepted — Fund Transfer request accepted for processing.
       headers:
         Location:
           description: >
@@ -399,6 +400,10 @@ components:
           $ref: '#/components/schemas/TransactionAmounts'
         funds:
           $ref: '#/components/schemas/FundTransferFunds'
+          description: >
+            Source and destination funds for the transfer. Required for all transfer types.
+            For FULL_REBALANCE transfers, destination segments must specify requestedPercentage: 100
+            and source segments must not specify amounts or percentages.
         arrangement:
           $ref: '#/components/schemas/Arrangement'
         auditTransSummation:
@@ -423,11 +428,15 @@ components:
                 properties:
                   amountType:
                     const: FULL_REBALANCE
+                required:
+                  - amountType
+            required:
+              - transactionAmounts
           then:
             properties:
               funds:
                 properties:
-                  transferFrom:
+                  transferFromFunds:
                     items:
                       properties:
                         fundSegments:
@@ -436,7 +445,7 @@ components:
                               anyOf:
                                 - required: [requestedAmount]
                                 - required: [requestedPercentage]
-                  transferTo:
+                  transferToFunds:
                     items:
                       properties:
                         fundSegments:
@@ -472,8 +481,8 @@ components:
           type: number
           description: >
             The dollar amount to be transferred when the transaction is
-            amount-based. This field is only applicable when a fixed amount
-            transfer method is selected.
+            amount-based. This field is required when amountType is SPECIFIED_AMOUNT
+            and must not be provided for other amount types.
           minimum: 0
         requestedPercentage:
           type: number
@@ -481,7 +490,8 @@ components:
           maximum: 100
           description: >
             The percentage of the contract value to be transferred when the
-            transaction is percentage-based.
+            transaction is percentage-based. This field is required when amountType
+            is PERCENT_OF_CONTRACT_VALUE and must not be provided for other amount types.
       allOf:
         - if:
             properties:
@@ -515,17 +525,17 @@ components:
         This section identifies where value is removed from and where it is
         added as part of the fund transfer.
       required:
-        - transferFrom
-        - transferTo
+        - transferFromFunds
+        - transferToFunds
       properties:
-        transferFrom:
+        transferFromFunds:
           type: array
           description: >
             Lists the funds or fund segments from which value will be moved
             as part of the transfer.
           items:
             $ref: '#/components/schemas/FundTransferItem'
-        transferTo:
+        transferToFunds:
           type: array
           description: >
             Lists the funds or fund segments to which value will be allocated
@@ -549,7 +559,7 @@ components:
           description: >
             Indicates the asset class of the fund, such as fixed income,
             equity, or model-based investments.
-          enum: [FIXED, EQUITY, MODEL]
+          enum: [FIXED, VARIABLE, INDEXED, MODEL, CASH, OTHER]
         investmentType:
           type: string
           description: >
@@ -583,6 +593,9 @@ components:
         both the transfer-from and transfer-to segments must specify amounts.
         If percentages are used, both sides must specify percentages.
         Mixing amounts and percentages in the same transfer is not allowed.
+        
+        For FULL_REBALANCE transfers, source segments must not specify amounts
+        or percentages, while destination segments must specify requestedPercentage: 100.
       required:
         - segmentId
       properties:
@@ -592,21 +605,25 @@ components:
         requestedAmount:
           type: number
           minimum: 0
+          maximum: 9999999999.99
+          description: >
+            Dollar amount to transfer from this segment. Use this field for
+            amount-based transfers. Mutually exclusive with requestedPercentage.
+            Not allowed for FULL_REBALANCE transfers.
         requestedPercentage:
           type: number
+          description: >
+            Percentage of segment value to transfer. Use this field for
+            percentage-based transfers. Mutually exclusive with requestedAmount.
+            Required for destination segments in FULL_REBALANCE transfers (must be 100).
           minimum: 0
           maximum: 100
       oneOf:
-        - not:
-        # Case 1: FULL_REBALANCE → neither amount nor percentage allowed
-            anyOf:
-              - required: [requestedAmount]
-              - required: [requestedPercentage]
-        # Case 2: AMOUNT-based transfer
+        # Case 1: AMOUNT-based transfer
         - required: [requestedAmount]
           not:
             required: [requestedPercentage]
-        # Case 3: PERCENTAGE-based transfer
+        # Case 2: PERCENTAGE-based transfer
         - required: [requestedPercentage]
           not:
             required: [requestedAmount]
@@ -623,11 +640,17 @@ components:
       properties:
         productCode:
           type: string
-          maxLength: 50
+          maxLength: 100
+          description: >
+            Type of arrangement such as SYSTEMATIC_TRANSFER, PERIODIC_REBALANCE, etc.
         arrangementType:
           type: string
+          maxLength: 100
+          description: >
+            Subtype of arrangement such as MONTHLY, QUARTERLY, ANNUAL, etc.
         arrangementSubType:
           type: string
+          maxLength: 100
         startDate:
           type: string
           format: date
@@ -670,9 +693,17 @@ components:
           type: string
         transferAmount:
           type: number
+          description: >
+            Fixed dollar amount for this arrangement endpoint. Use this field
+            when the arrangement uses amount-based transfers. Mutually exclusive
+            with transferPercentage.
         transferPercentage:
           type: number
           maximum: 100
+          description: >
+            Percentage allocation for this arrangement endpoint. Use this field
+            when the arrangement uses percentage-based transfers. Mutually exclusive
+            with transferAmount.
       oneOf:
         - required: [transferAmount]
           not:
@@ -764,10 +795,16 @@ components:
       properties:
         producerNumber:
           type: string
+          maxLength: 100
+          description: Carrier-assigned unique identifier for the producer.
         npn:
           type: string
+          maxLength: 100
+          description: National Producer Number.
         crdNumber:
           type: string
+          maxLength: 100
+          description: Central Registration Depository number.
     Party:
       description: >
         Represents a party associated with the policy involved in the fund
@@ -815,17 +852,17 @@ components:
           type: string
           minLength: 1
           maxLength: 105
-          pattern: '^[a-zA-Z0-9=()*@#\s.,''_/~%$!();:&"®`\\?\-]{1,105}$'
+          pattern: '^[a-zA-Z0-9=()*@#\s.,''_/~%$!();:&"®`\\?-]{1,105}$'
         middleName:
           type: string
           minLength: 1
           maxLength: 105
-          pattern: '^[a-zA-Z0-9=()*@#\s.,''_/~%$!();:&"®`\\?\-]{1,105}$'
+          pattern: '^[a-zA-Z0-9=()*@#\s.,''_/~%$!();:&"®`\\?-]{1,105}$'
         lastName:
           type: string
           minLength: 1
           maxLength: 105
-          pattern: '^[a-zA-Z0-9=()*@#\s.,''_/~%$!();:&"®`\\?\-]{1,105}$'
+          pattern: '^[a-zA-Z0-9=()*@#\s.,''_/~%$!();:&"®`\\?-]{1,105}$'
         taxId:
           type: string
           maxLength: 9
@@ -861,7 +898,7 @@ components:
           type: string
           minLength: 1
           maxLength: 180
-          pattern: '^[\w=()*@#\s.,''\/~%$!;:&"®`\\?\-]{1,180}$'
+          pattern: '^[\w=()*@#\s.,''\/~%$!;:&"®`\\?-]{1,180}$'
         taxId:
           type: string
           maxLength: 9

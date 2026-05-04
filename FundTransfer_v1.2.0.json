@@ -20,7 +20,7 @@
       "amountType": "FULL_REBALANCE"
     },
     "funds": {
-      "transferFrom": [
+      "transferFromFunds": [
         {
           "fundId": "FUND_FIXED_01",
           "assetClass": "FIXED",
@@ -34,7 +34,7 @@
           ]
         }
       ],
-      "transferTo": [
+      "transferToFunds": [
         {
           "fundId": "FUND_EQUITY_99",
           "assetClass": "EQUITY",
