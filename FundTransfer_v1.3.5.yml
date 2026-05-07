@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Fund Transfer Service
-  version: 1.3.0
+  version: 1.3.4
   description: >
     API to perform fund-to-fund and segment-based value transfers.
   license:
@@ -47,8 +47,8 @@ paths:
                         fundSegments:
                           - segmentId: SEG_FROM_01
                     transferToFunds:
-                      - fundId: FUND_EQUITY_99
-                        assetClass: EQUITY
+                      - fundId: FUND_FIXED_99
+                        assetClass: FIXED
                         investmentType: VARIABLE_ANNUITY_FUND
                         currentRate: 6.75
                         maturityDate: "2035-06-30"
@@ -555,7 +555,7 @@ components:
           type: string
           description: >
             Indicates the asset class of the fund, such as fixed income,
-            equity, or model-based investments.
+            or model-based investments.
           enum: [FIXED, VARIABLE, INDEXED, MODEL, CASH, OTHER]
         investmentType:
           type: string

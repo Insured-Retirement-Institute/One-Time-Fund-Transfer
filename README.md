@@ -38,7 +38,7 @@ Fund Transfer supports the following transaction sub-types, supplied via the `tr
 Used to redistribute the entire contract value across funds in a single transaction, reallocating all source funds to specified destination funds at defined percentages.
 
 ### 2. Fund Balance Transfer
-Moves the entire balance of one or more source funds to one or more destination funds, without specifying a fixed dollar amount or percentage of contract value. Or move a percentage of the value of the funds to other funds.
+Moves the entire balance of one or more source funds to one or more destination funds, without specifying a fixed dollar amount or percentage of contract value.
 
 ### 3. Percent of Contract Value Transfer
 Transfers a specified percentage of the overall contract value from source funds to destination funds.
