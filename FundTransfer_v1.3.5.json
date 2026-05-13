@@ -7,20 +7,18 @@
     "correlationId": "deadbeef-aaaa-bbbb-cccc-ddddeeeeffff"
   },
   "query": {
-    "associatedFirmId": "DTCC",
-    "transactionSubType": "FULL_ONE_TIME_REBALANCE"
+    "associatedFirmId": "DTCC"
   },
   "body": {
     "effectiveDate": "2026-03-15",
-    "fundAllocation": "DEFAULT",
-    "allocationOption": "SPECIFIEDFUNDS",
+    "allocationOption": "SPECIFIED_FUNDS",
     "nsccParticipantId": "12345",
     "cusip": "123ABC456",
     "transactionAmounts": {
       "amountType": "FULL_REBALANCE"
     },
     "funds": {
-      "transferFrom": [
+      "transferFromFunds": [
         {
           "fundId": "FUND_FIXED_01",
           "assetClass": "FIXED",
@@ -34,10 +32,10 @@
           ]
         }
       ],
-      "transferTo": [
+      "transferToFunds": [
         {
-          "fundId": "FUND_EQUITY_99",
-          "assetClass": "EQUITY",
+          "fundId": "FUND_FIXED_99",
+          "assetClass": "FIXED",
           "investmentType": "VARIABLE_ANNUITY_FUND",
           "currentRate": 6.75,
           "maturityDate": "2035-06-30",
@@ -56,7 +54,7 @@
       "arrangementSubType": "MONTHLY",
       "startDate": "2026-04-01",
       "endDate": "2030-04-01",
-      "modalAmt": 500,
+      "modalAmount": 500,
       "sourceTransferAmountType": "AMOUNT",
       "destinationTransferAmountType": "AMOUNT",
       "arrangementSource": {
@@ -70,12 +68,12 @@
     },
     "investProduct": {
       "rateLockInfo": "RATE_LOCK_2026",
-      "lockedInInd": true
+      "isLockedIn": true
     },
     "auditTransSummation": {
       "auditTotalType": "COUNT",
       "auditTotal": 1,
-      "correlationGuId": "550e8400-e29b-41d4-a716-446655440000",
+      "correlationGuid": "550e8400-e29b-41d4-a716-446655440000",
       "correlationIdState": "INITIAL_USAGE"
     },
     "producer": {

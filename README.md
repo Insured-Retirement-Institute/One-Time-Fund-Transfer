@@ -67,11 +67,11 @@ The schema generally includes:
 
 - **Root Attributes:** effectiveDate, allocationOption, cusip, nsccParticipantId
 - **transactionAmounts:** amountType (FULL_REBALANCE, FUND_BALANCE_TRANSFER, PERCENT_OF_CONTRACT_VALUE, SPECIFIED_AMOUNT), requestedAmount, requestedPercentage
-- **funds:** transferFrom and transferTo arrays, each containing fund-level and optional segment-level details (fundId, assetClass, investmentType, currentRate, maturityDate, fundSegments)
+- **funds:** transferFromFunds and transferToFunds arrays, each containing fund-level and optional segment-level details (fundId, assetClass, investmentType, currentRate, maturityDate, fundSegments)
 - **fundSegments:** segmentId, requestedAmount, requestedPercentage — with strict mutual-exclusivity rules based on transfer type
 - **arrangement:** productCode, arrangementType, arrangementSubType, startDate, endDate, modalAmt, sourceTransferAmountType, destinationTransferAmountType, arrangementSource, arrangementDestination — used for systematic or recurring transfer programs
-- **investProduct:** rateLockInfo, lockedInInd — captures rate-lock details for applicable investment products
-- **auditTransSummation:** auditTotalType, auditTotal, correlationGuId, correlationIdState — supports audit and reconciliation workflows
+- **investProduct:** rateLockInfo, isLockedIn — captures rate-lock details for applicable investment products
+- **auditTransSummation:** auditTotalType, auditTotal, correlationGuid, correlationIdState — supports audit and reconciliation workflows
 - **Producer:** producerNumber, npn, crdNumber — identifies the advisor or producer associated with the transaction
 - **Parties:** individual/entity identity, relationships (owner, jointOwner, annuitant, jointAnnuitant, primaryBeneficiary, contingentBeneficiary), paymentForm, allocationPercentage
 
@@ -111,7 +111,7 @@ Every error response—regardless of transaction type—includes:
 | **correlationId** | Carries forward the inbound request's correlation ID header to enable end-to-end traceability. |
 | **httpStatus** | Numeric HTTP status code (400–599) representing the type and severity of the failure. |
 | **code** | Structured identifier in the enforced format: `domain.category.subcategory`. Enables machine-readable error handling. |
-| **message** | End-user-friendly explanation, safe to show in portals or consumer-facing apps. |
+| **message** | User‑friendly explanation, safe to display in portals or consumer‑facing applications. |
 | **validationErrors** | Array describing domain/business rule violations; each entry requires its own code and message. |
 
 ---
