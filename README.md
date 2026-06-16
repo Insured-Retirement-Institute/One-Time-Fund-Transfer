@@ -1,5 +1,7 @@
 # Fund Transfer API
 
+> **NOTE:** This repository is for the working group to use while drafting documentation and specifications before they are formally ratified.  Users outside of the working group should not begin implementing solutions based on the content in this repository as it is likely to change without notice.
+
 ## Overview
 This document defines the **Fund Transfer** transaction as part of the broader IRI Digital First transformation effort. The transaction supports fund-to-fund and segment-based value transfers on annuity and life insurance policies, enabling carriers, distributors, and solution providers to reallocate policy investments through a modern, standardized interface.
 
@@ -149,7 +151,7 @@ This standardized error structure ensures:
 ---
 
 ## OpenAPI Specs
-Unified Swagger documentation for this fund transfer endpoint is available in the `openapi-specs/` folder.
+Unified Swagger documentation for this fund transfer endpoint is available in the [draft-api-specs](./draft-api-specs) directory.
 
 ---
 
