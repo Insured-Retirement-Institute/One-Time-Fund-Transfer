@@ -1,7 +1,5 @@
 # Fund Transfer API
 
-> **NOTE:** This repository is for the working group to use while drafting documentation and specifications before they are formally ratified.  Users outside of the working group should not begin implementing solutions based on the content in this repository as it is likely to change without notice.
-
 ## Overview
 This document defines the **Fund Transfer** transaction as part of the broader IRI Digital First transformation effort. The transaction supports fund-to-fund and segment-based value transfers on annuity and life insurance policies, enabling carriers, distributors, and solution providers to reallocate policy investments through a modern, standardized interface.
 
@@ -33,23 +31,6 @@ The initiative modernizes legacy XML/SOAP-based In-Force Transactions (IFT) into
 
 ---
 
-## Supported Transaction Sub-Types
-Fund Transfer supports the following transaction sub-types, supplied via the `transactionSubType` query parameter:
-
-### 1. Full One-Time Rebalance
-Used to redistribute the entire contract value across funds in a single transaction, reallocating all source funds to specified destination funds at defined percentages.
-
-### 2. Fund Balance Transfer
-Moves the entire balance of one or more source funds to one or more destination funds, without specifying a fixed dollar amount or percentage of contract value.
-
-### 3. Percent of Contract Value Transfer
-Transfers a specified percentage of the overall contract value from source funds to destination funds.
-
-### 4. Specified Amount Transfer
-Transfers a fixed dollar amount from one or more source funds to one or more destination funds.
-
----
-
 ## Endpoints
 
 #### 1. Submit Fund Transfer
@@ -67,15 +48,14 @@ Transfers a fixed dollar amount from one or more source funds to one or more des
 ## Schema Overview
 The schema generally includes:
 
-- **Root Attributes:** effectiveDate, allocationOption, cusip, nsccParticipantId
-- **transactionAmounts:** amountType (FULL_REBALANCE, FUND_BALANCE_TRANSFER, PERCENT_OF_CONTRACT_VALUE, SPECIFIED_AMOUNT), requestedAmount, requestedPercentage
+- **Root Attributes:** effectiveDate, allocationOption, cusip, nsccParticipantId, amountType
 - **funds:** transferFromFunds and transferToFunds arrays, each containing fund-level and optional segment-level details (fundId, assetClass, investmentType, currentRate, maturityDate, fundSegments)
 - **fundSegments:** segmentId, requestedAmount, requestedPercentage — with strict mutual-exclusivity rules based on transfer type
-- **arrangement:** productCode, arrangementType, arrangementSubType, startDate, endDate, modalAmt, sourceTransferAmountType, destinationTransferAmountType, arrangementSource, arrangementDestination — used for systematic or recurring transfer programs
+- **arrangement:** productCode, arrangementType, arrangementSubType, startDate, endDate, modalAmount, sourceTransferAmountType, destinationTransferAmountType, arrangementSource, arrangementDestination — used for systematic or recurring transfer programs
 - **investProduct:** rateLockInfo, isLockedIn — captures rate-lock details for applicable investment products
 - **auditTransSummation:** auditTotalType, auditTotal, correlationGuid, correlationIdState — supports audit and reconciliation workflows
 - **Producer:** producerNumber, npn, crdNumber — identifies the advisor or producer associated with the transaction
-- **Parties:** individual/entity identity, relationships (owner, jointOwner, annuitant, jointAnnuitant, primaryBeneficiary, contingentBeneficiary), paymentForm, allocationPercentage
+- **Parties:** individual/entity identity, relationships (owner, jointOwner, annuitant, jointAnnuitant, primaryBeneficiary, contingentBeneficiary)
 
 Each fund transfer request delivers structured acknowledgment and status information supporting the corresponding transfer workflow.
 
@@ -115,7 +95,9 @@ Every error response—regardless of transaction type—includes:
 | **code** | Structured identifier in the enforced format: `domain.category.subcategory`. Enables machine-readable error handling. |
 | **message** | User‑friendly explanation, safe to display in portals or consumer‑facing applications. |
 | **validationErrors** | Array describing domain/business rule violations; each entry requires its own code and message. |
-
+| **requestId** | Unique identifier assigned to an accepted fund transfer request and used for lifecycle tracking. |
+| **associatedFirmId** | Firm identifier supplied by the caller and propagated throughout processing and event notifications. |
+| **nsccParticipantId** | NSCC participant identifier associated with the transaction. |
 ---
 
 ## Supported HTTP Error Codes
@@ -139,6 +121,88 @@ Every error response—regardless of transaction type—includes:
 | `504` | Gateway Timeout |
 
 ---
+# Day‑2 Asynchronous Processing
+
+Fund Transfer transactions use an asynchronous processing model.
+Upon successful validation, the API returns HTTP 202 Accepted and
+provides a Location header and requestId for lifecycle tracking.
+
+Acceptance of a request does not indicate final transaction completion.
+Final transaction processing occurs asynchronously in downstream systems.
+
+## Delivery Model
+Day‑2 confirmation events are published through:
+- SAP Advanced Event Mesh
+- Solace Event Broker
+
+Consumers receive notifications through topic-based subscriptions.
+Day‑2 confirmations are event-driven only.
+
+## Day‑2 Confirmation Event
+Fund Transfer processing outcomes are communicated through the
+Day2FundTransferConfirmationEvent.
+
+Supported outcomes include:
+- SUCCESS
+- SUCCESS_WITH_INFO
+- FAILURE
+
+Each event includes:
+- requestId
+- correlationId
+- associatedFirmId
+- policyNumber
+- eventId
+- eventType
+- eventTimestamp
+- transactionType
+- status
+- transExeDate
+- transExeTime
+
+to support end-to-end traceability.
+
+## Event Schema
+The canonical event includes:
+
+### Event Metadata
+- eventType
+- eventId
+- eventTimestamp
+
+### Transaction Information
+- requestId
+- policyNumber
+- transactionType
+
+### Processing Outcome
+- status
+- message
+- effectiveDate
+
+### Producer and Participant Information
+- npn
+- nsccParticipantId
+
+### Execution Details
+- transExeDate
+- transExeTime
+
+Supported transactionType value:
+- FUND_TRANSFERS
+
+Supported eventType value:
+- DAY2_CONFIRM
+
+## Status Visibility
+The lifecycle endpoint:
+GET /v1/policies/{policyNumber}/fund-transfers/requests/{requestId}
+provides operational visibility into transaction progress.
+
+The lifecycle endpoint does not replace Day‑2 event delivery as the
+authoritative source for final transaction outcomes.
+
+---
 
 ## Purpose & Benefits
 This standardized error structure ensures:
@@ -151,7 +215,7 @@ This standardized error structure ensures:
 ---
 
 ## OpenAPI Specs
-Unified Swagger documentation for this fund transfer endpoint is available in the [draft-api-specs](./draft-api-specs) directory.
+Unified Swagger documentation for this fund transfer endpoint is available in the `openapi-specs/` folder.
 
 ---
 
@@ -159,15 +223,6 @@ Unified Swagger documentation for this fund transfer endpoint is available in th
 - Use the **Issues** tab of the repository to report bugs or enhancement requests.
 - **Security issues** should be reported directly to Katherine Dease at **kdease@irionline.org**.
 - Follow the standards governance workflow on the main page for contribution guidelines.
-
----
-
-## Versioning
-- Current Version: **v1.1.0**
-- Uses semantic versioning for all updates.
-- Changes must be documented through commit messages and changelogs.
-- Backward-incompatible changes require a major version increment.
-- Draft and active versions are labeled per DFA governance.
 
 ---
 
@@ -187,3 +242,17 @@ Refer to the repository's **Code of Conduct** and **Style Guide** for contributi
 - **Carrier Business Owner:** digitalfirst@irionline.org
 - **Distributor Business Owner:** [contact]
 - **Solution Provider Business Owner:** [contact]
+
+---
+
+## Versioning
+## v1.4.0 Highlights
+
+- **Async Processing:** Added Day-2 confirmation event schema (`Day2FundTransferConfirmationEvent`).
+- **Validation Enhancements:** Updated conditional business-rule validation for `amountType`, `funds.transferFromFunds[].fundSegments[]`, and `funds.transferToFunds[].fundSegments[]`.
+Simplified the transfer model by moving `amountType` to `FundTransferRequest` and relocating `requestedAmount` / `requestedPercentage` from `TransactionAmounts` to `FundSegment`.
+- **Party Model Standardization:** Standardized `IndividualIdentity.type`, `EntityIdentity.type`, and `PartyRelationship.relationships[]` enum values to Screaming Snake case, naming conventions.
+Removed paymentForm, allocationPercentage fields.
+- **Required Field Changes:** Added mandatory fields `FundTransferRequest.nsccParticipantId`, `FundTransferRequest.producer`, `FundTransferRequest.allocationOption`, `Producer.npn`, `correlationId` and `associatedFirmId`.
+- **Documentation Improvements:** Updated descriptions, examples, and business-rule documentation across `FundTransferRequest`, `FundSegment`, `Party`, `Producer`, and `Error` schemas.
+---
