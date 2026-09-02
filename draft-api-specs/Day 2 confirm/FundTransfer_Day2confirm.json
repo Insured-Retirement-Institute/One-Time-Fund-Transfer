@@ -1,0 +1,17 @@
+{
+  "eventType": "DAY2_CONFIRM",
+  "eventId": "550e8400-e29b-41d4-a716-446655440001",
+  "eventTimestamp": "2026-03-15T14:30:45Z",
+  "associatedFirmId": "DTCC",
+  "requestId": "FT-REQ-10000001",
+  "correlationId": "deadbeef-aaaa-bbbb-cccc-ddddeeeeffff",
+  "policyNumber": "ABC12345",
+  "transactionType": "FUND_TRANSFERS",
+  "status": "SUCCESS",
+  "message": "Fund transfer completed successfully.",
+  "effectiveDate": "2026-03-15",
+  "nsccParticipantId": "12345",
+  "npn": "99887766",
+  "transExeDate": "2026-03-15",
+  "transExeTime": "14:29:52"
+}
